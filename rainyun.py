@@ -97,52 +97,52 @@ def clear_temp_dir(temp_dir: str) -> None:
             os.remove(file_path)
 
 
-def save_cookies(ctx: RuntimeContext):
-    """保存 cookies 到文件"""
-    cookies = ctx.driver.get_cookies()
-    with open(COOKIE_FILE, "w") as f:
-        json.dump(cookies, f)
-    logger.info(f"Cookies 已保存到 {COOKIE_FILE}")
+# def save_cookies(ctx: RuntimeContext):
+#     """保存 cookies 到文件"""
+#     cookies = ctx.driver.get_cookies()
+#     with open(COOKIE_FILE, "w") as f:
+#         json.dump(cookies, f)
+#     logger.info(f"Cookies 已保存到 {COOKIE_FILE}")
 
 
-def load_cookies(ctx: RuntimeContext) -> bool:
-    """从文件加载 cookies"""
-    if not os.path.exists(COOKIE_FILE):
-        logger.info("未找到 cookies 文件")
-        return False
-    try:
-        with open(COOKIE_FILE, "r") as f:
-            cookies = json.load(f)
-        # 先访问域名以便设置 cookie
-        ctx.driver.get(build_app_url("/"))
-        for cookie in cookies:
-            # 移除可能导致问题的字段
-            cookie.pop("sameSite", None)
-            cookie.pop("expiry", None)
-            try:
-                ctx.driver.add_cookie(cookie)
-            except Exception as e:
-                logger.warning(f"添加 cookie 失败: {e}")
-        logger.info("Cookies 已加载")
-        return True
-    except Exception as e:
-        logger.error(f"加载 cookies 失败: {e}")
-        return False
+# def load_cookies(ctx: RuntimeContext) -> bool:
+#     """从文件加载 cookies"""
+#     if not os.path.exists(COOKIE_FILE):
+#         logger.info("未找到 cookies 文件")
+#         return False
+#     try:
+#         with open(COOKIE_FILE, "r") as f:
+#             cookies = json.load(f)
+#         # 先访问域名以便设置 cookie
+#         ctx.driver.get(build_app_url("/"))
+#         for cookie in cookies:
+#             # 移除可能导致问题的字段
+#             cookie.pop("sameSite", None)
+#             cookie.pop("expiry", None)
+#             try:
+#                 ctx.driver.add_cookie(cookie)
+#             except Exception as e:
+#                 logger.warning(f"添加 cookie 失败: {e}")
+#         logger.info("Cookies 已加载")
+#         return True
+#     except Exception as e:
+#         logger.error(f"加载 cookies 失败: {e}")
+#         return False
 
 
-def check_login_status(ctx: RuntimeContext) -> bool:
-    """检查是否已登录"""
-    ctx.driver.get(build_app_url("/dashboard"))
-    time.sleep(3)
-    # 如果跳转到登录页面，说明 cookie 失效
-    if "login" in ctx.driver.current_url:
-        logger.info("Cookie 已失效，需要重新登录")
-        return False
-    # 检查是否成功加载 dashboard
-    if ctx.driver.current_url == build_app_url("/dashboard"):
-        logger.info("Cookie 有效，已登录")
-        return True
-    return False
+# def check_login_status(ctx: RuntimeContext) -> bool:
+#     """检查是否已登录"""
+#     ctx.driver.get(build_app_url("/dashboard"))
+#     time.sleep(3)
+#     # 如果跳转到登录页面，说明 cookie 失效
+#     if "login" in ctx.driver.current_url:
+#         logger.info("Cookie 已失效，需要重新登录")
+#         return False
+#     # 检查是否成功加载 dashboard
+#     if ctx.driver.current_url == build_app_url("/dashboard"):
+#         logger.info("Cookie 有效，已登录")
+#         return True
+#     return False
 
 
 def do_login(ctx: RuntimeContext, user: str, pwd: str) -> bool:
@@ -175,7 +175,7 @@ def do_login(ctx: RuntimeContext, user: str, pwd: str) -> bool:
         # 使用显式等待检测登录是否成功（通过判断 URL 变化）
         ctx.wait.until(EC.url_contains("dashboard"))
         logger.info("登录成功！")
-        save_cookies(ctx)
+        # (ctx)save_cookies
         return True
     except TimeoutException:
         logger.error(f"登录超时或失败！当前 URL: {ctx.driver.current_url}")
@@ -196,7 +196,7 @@ def init_selenium(debug: bool, linux: bool) -> WebDriver:
         if chrome_bin and os.path.exists(chrome_bin):
             ops.binary_location = chrome_bin
         # 容器环境使用系统 chromedriver
-        chromedriver_path = os.environ.get("CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver")
+        chromedriver_path = os.environ.get("CHROMEDRIVER_PATH", "/usr/local/share/chromedriver-linux64")
         if os.path.exists(chromedriver_path):
             return webdriver.Chrome(service=Service(chromedriver_path), options=ops)
         return webdriver.Chrome(service=Service("./chromedriver"), options=ops)
@@ -473,12 +473,11 @@ def run():
             temp_dir=temp_dir
         )
 
-        # 尝试使用 cookie 登录
+        
         logged_in = False
-        if load_cookies(ctx):
-            logged_in = check_login_status(ctx)
+       
 
-        # cookie 无效则进行正常登录
+        # 进行正常登录
         if not logged_in:
             logged_in = do_login(ctx, user, pwd)
 
